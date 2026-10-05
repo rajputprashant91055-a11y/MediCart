@@ -1,7 +1,17 @@
+import javax.swing.SwingUtilities;
+import ui.HomeFrame;
+
 public class Main {
+
     public static void main(String[] args) {
 
-System.out.println("Welcome to MediCart");
-System.out.println("Online Medicine Shopping System");
+        SwingUtilities.invokeLater(() -> {
+
+            // Create Home Screen
+            HomeFrame homeFrame = new HomeFrame();
+
+            // Display Home Screen
+            homeFrame.setVisible(true);
+        });
     }
 }
