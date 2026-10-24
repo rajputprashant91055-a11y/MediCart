@@ -5,6 +5,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -91,18 +92,30 @@ public class AdminDashboard extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(prescriptionTable);
 
+        JButton viewButton = createButton("👁 View Prescription", new Color(13, 148, 136));
         JButton approveButton = createButton("Approve", green);
         JButton rejectButton = createButton("Reject", red);
         JButton noteButton = createButton("Add Admin Note", primary);
         JButton refreshButton = createButton("Refresh", navy);
 
+        viewButton.addActionListener(e -> viewPrescription());
         approveButton.addActionListener(e -> updatePrescriptionStatus("Approved"));
         rejectButton.addActionListener(e -> updatePrescriptionStatus("Rejected"));
         noteButton.addActionListener(e -> addAdminNote());
         refreshButton.addActionListener(e -> loadPrescriptions());
 
+        prescriptionTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    viewPrescription();
+                }
+            }
+        });
+
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 5));
         buttons.setOpaque(false);
+        buttons.add(viewButton);
         buttons.add(approveButton);
         buttons.add(rejectButton);
         buttons.add(noteButton);
@@ -117,6 +130,109 @@ public class AdminDashboard extends JFrame {
         panel.add(bottom, BorderLayout.SOUTH);
 
         return panel;
+    }
+
+    private void viewPrescription() {
+        int selectedRow = prescriptionTable.getSelectedRow();
+
+        if (selectedRow == -1) {
+            showMessage("Please select a prescription from the table first.",
+                    "No Selection", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int row = prescriptionTable.convertRowIndexToModel(selectedRow);
+
+        List<PrescriptionManager.Prescription> prescriptions =
+                PrescriptionManager.getPrescriptions();
+
+        if (row >= prescriptions.size()) {
+            showMessage("Prescription data could not be found. Refresh and try again.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        PrescriptionManager.Prescription prescription = prescriptions.get(row);
+        File file = prescription.getFile();
+
+        // Search in common locations if file is relative or not found
+        if (file == null || !file.exists()) {
+            if (file != null) {
+                File candidate1 = new File("uploads/prescriptions", file.getName());
+                if (candidate1.exists()) {
+                    file = candidate1;
+                } else {
+                    File candidate2 = new File("uploads", file.getName());
+                    if (candidate2.exists()) {
+                        file = candidate2;
+                    }
+                }
+            }
+        }
+
+        if (file == null || !file.exists()) {
+            showMessage("Prescription file could not be found on disk:\n"
+                    + (file != null ? file.getPath() : prescription.getFileName())
+                    + "\n\nPlease ensure the uploaded file exists in the uploads folder.",
+                    "File Not Found", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                Desktop.getDesktop().open(file);
+            } else {
+                String lower = file.getName().toLowerCase();
+                if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+                    showImageDialog(file, prescription.getCustomerName());
+                } else {
+                    showMessage("Prescription file location:\n" + file.getAbsolutePath(),
+                            "Prescription File", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        } catch (Exception ex) {
+            String lower = file.getName().toLowerCase();
+            if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+                showImageDialog(file, prescription.getCustomerName());
+            } else {
+                showMessage("Could not open external viewer: " + ex.getMessage()
+                        + "\nFile location:\n" + file.getAbsolutePath(),
+                        "Open Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void showImageDialog(File file, String customerName) {
+        JDialog dialog = new JDialog(this, "Prescription Preview - " + customerName, true);
+        dialog.setSize(650, 750);
+        dialog.setLocationRelativeTo(this);
+
+        ImageIcon icon = new ImageIcon(file.getAbsolutePath());
+        Image img = icon.getImage();
+        int maxW = 600;
+        int maxH = 650;
+        int w = icon.getIconWidth();
+        int h = icon.getIconHeight();
+        if (w > maxW || h > maxH) {
+            double ratio = Math.min((double) maxW / Math.max(1, w), (double) maxH / Math.max(1, h));
+            w = (int) (w * ratio);
+            h = (int) (h * ratio);
+            img = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        }
+
+        JLabel imgLabel = new JLabel(new ImageIcon(img));
+        imgLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        JScrollPane sp = new JScrollPane(imgLabel);
+        dialog.add(sp, BorderLayout.CENTER);
+
+        JButton closeBtn = new JButton("Close");
+        closeBtn.addActionListener(e -> dialog.dispose());
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        btnPanel.add(closeBtn);
+        dialog.add(btnPanel, BorderLayout.SOUTH);
+
+        dialog.setVisible(true);
     }
 
     private void loadPrescriptions() {
