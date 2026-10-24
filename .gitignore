@@ -1,2 +1,25 @@
+# Compiled Class files
 *.class
 
+# Log files and crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# Temporary files
+tempCodeRunnerFile.java
+*.tmp
+
+# Test scripts (optional, or keep if needed)
+DiagnoseLogin.java
+DiagnoseLogin.class
+EndToEndTest.java
+EndToEndTest.class
+BackendVerificationTest.java
+BackendVerificationTest.class
+FullSystemIntegrationTest.java
+FullSystemIntegrationTest.class
+
+# OS generated files
+Thumbs.db
+.DS_Store

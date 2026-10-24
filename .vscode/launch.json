@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "MediCart App",
+            "request": "launch",
+            "mainClass": "Main",
+            "classPaths": [
+                "${workspaceFolder}",
+                "${workspaceFolder}/lib/mysql-connector-j-26.7.0.jar"
+            ],
+            "vmArgs": "-Dfile.encoding=UTF-8"
+        }
+    ]
+}
